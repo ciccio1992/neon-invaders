@@ -1,0 +1,5 @@
+{
+  "name": "Neon Invaders",
+  "description": "A high-octane vertical scrolling shooter with neon aesthetics. Battle through 5 distinct stages, face unique color-coded enemies, and defeat the final boss. Built with React and HTML5 Canvas for 60FPS action.",
+  "requestFramePermissions": []
+}
