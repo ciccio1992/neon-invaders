@@ -239,16 +239,26 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
   };
 
   const spawnLoot = (x: number, y: number, totalValue: number) => {
-      const isBigCoins = totalValue > 50;
-      const coinValue = isBigCoins ? 50 : 10;
-      const count = Math.ceil(totalValue / coinValue);
+      // Dynamic coin scaling to ensure performance with large rewards
+      const maxEntities = 30; // Max number of coins to spawn
+      const minCoinValue = 10;
+      
+      let count = Math.ceil(totalValue / minCoinValue);
+      let coinValue = minCoinValue;
+      
+      if (count > maxEntities) {
+          count = maxEntities;
+          coinValue = Math.ceil(totalValue / count);
+      }
+
+      const isBigCoins = coinValue >= 50;
+      const size = isBigCoins ? BIG_COIN_SIZE : COIN_SIZE;
 
       for (let i = 0; i < count; i++) {
           const angle = Math.random() * Math.PI * 2;
           const speed = Math.random() * 2 + 1;
           const vx = Math.cos(angle) * speed;
           const vy = Math.sin(angle) * speed;
-          const size = isBigCoins ? BIG_COIN_SIZE : COIN_SIZE;
 
           const coin: Entity = {
               id: `coin-${Math.random()}`,
@@ -404,17 +414,27 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
         } else if (!bossSpawned.current && entities.current.filter(e => e.type === EntityType.BOSS).length === 0) {
           bossSpawned.current = true;
           const isBoss2 = stats.level === 10;
-          const bossHealth = isBoss2 ? 12000 : 400; // Updated HP
+          
+          // First Time Clear Bonus Check
+          const isFirstTimeClear = stats.level === playerProgress.getHighestUnlockedStage();
+          const baseCurrency = isBoss2 ? 3000 : 1000;
+          const bonusCurrency = isFirstTimeClear ? (isBoss2 ? 5000 : 2000) : 0;
+          const totalReward = baseCurrency + bonusCurrency;
+
+          const bossHealth = isBoss2 ? 12000 : 400; 
+          const buffer = 40;
+          const startX = buffer + Math.random() * (CANVAS_WIDTH - BOSS_SIZE.width - buffer * 2);
+
           const boss = createEntity(
               EntityType.BOSS,
-              CANVAS_WIDTH / 2 - BOSS_SIZE.width / 2,
+              startX,
               -BOSS_SIZE.height,
               BOSS_SIZE.width,
               BOSS_SIZE.height,
               currentStage.primaryColor,
               2, 1,
               bossHealth,
-              isBoss2 ? 5000 : 1000,
+              totalReward, // Adjusted reward
               0,
               isBoss2 ? 'OMEGA' : 'ALPHA' 
           );
@@ -664,8 +684,9 @@ const GameCanvas: React.FC<GameCanvasProps> = ({
                     if (bossTimer.current > 30) {
                         bossState.current = 'TELEPORT_IN';
                         bossTimer.current = 0;
+                        const buffer = 40;
                         bossTeleportTarget.current = {
-                             x: 20 + Math.random() * (CANVAS_WIDTH - BOSS_SIZE.width - 40),
+                             x: buffer + Math.random() * (CANVAS_WIDTH - BOSS_SIZE.width - buffer * 2),
                              y: 50 + Math.random() * 100
                         };
                         entity.pos.x = bossTeleportTarget.current.x;
